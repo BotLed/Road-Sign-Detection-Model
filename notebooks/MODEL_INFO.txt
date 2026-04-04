@@ -1,0 +1,5 @@
+## MODEL INFO ##
+- I'm putting this here temporarily to help users understand each model as the number grows.
+
+* BASELINE: trained only on clean data from the original datset.
+* 50_50_SPLIT_TAPE: trained on a 50/50 split of tape vandalized images and clean data.
