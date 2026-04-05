@@ -3,3 +3,7 @@
 
 * BASELINE: trained only on clean data from the original datset.
 * 50_50_SPLIT_TAPE: trained on a 50/50 split of tape vandalized images and clean data.
+* 70_30_SPLIT_TAPE: trained on a 70/30 split of tape vandalized images and clean data,
+  with Albumentations augmentation applied to all images (~2x effective dataset size).
+  Augmentations include: horizontal flips, brightness/contrast jitter, hue-saturation shift,
+  Gaussian blur, CLAHE, image compression noise, and random shadow.
