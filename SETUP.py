@@ -15,7 +15,7 @@ TO VALIDATE: RUN VALIDATE.PY
 '''
 
 def setup_workspace():
-    # 1. gets directory where THIS script is saved
+    # gets directory where THIS script is saved
     base_dir = os.path.dirname(os.path.abspath(__file__))
     
     # defines paths relative to base_dir
@@ -26,7 +26,7 @@ def setup_workspace():
     if os.path.exists(zip_path):
         print(f"Extracting {zip_path} to {extract_path}...")
         
-        # ensure destination folder exists
+        # destination folder exists?
         os.makedirs(extract_path, exist_ok=True)
         
         with zipfile.ZipFile(zip_path, 'r') as zip_ref:
@@ -37,7 +37,7 @@ def setup_workspace():
         '''
         CHANGE "patch" TO WHICHEVER ATTACK TYPE YOU WOULD LIKE TO VALIDATE ON (possible types found in src/attack.py)
         '''
-        generate_attack_dataset(extract_path, "tape")
+        generate_attack_dataset(extract_path, "patch")
         create_attack_yaml(extract_path)
 
     else:

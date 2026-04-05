@@ -1,44 +1,65 @@
 import os
 from ultralytics import YOLO
 
-def validate_model(model_path, yaml_path):
+def validate_model(model_name, model_path, dataset_name, yaml_path):
     '''
-    This will validate the model at model_path against the currently generated attack/vandalized images
-    dataset.
+    Validates the model and returns dictionary of key metrics.
     '''
     if not os.path.exists(model_path):
         print(f"❌ Error: Model not found at {model_path}")
-        return
+        return None
     
     if not os.path.exists(yaml_path):
         print(f"❌ Error: YAML not found at {yaml_path}")
-        return
+        return None
 
     # load model
     model = YOLO(model_path)
 
-    # evaluate
-    model.val(data=yaml_path)
+    # verbose=False to keep console clean for the summary
+    results = model.val(data=yaml_path, verbose=False)
 
-'''
-# TODO: MAKE THIS SO IT AUTO AUTORUNS COMPARISONS OF EACH MODEL AND PROVIDES CLEAN SUMMARY.
-Ex: 
-1. Runs baseline on clean dataset, tape dataset, adversarial patch dataset, etc.
-2. Runs 50_50_split_tape on clean dataset, tape dataset, adversarial patch dataset, etc. 
-3. Compares the maP50 scores of all models for each dataset in a nice summary
+    return {
+        "Model": model_name,
+        "Dataset": dataset_name,
+        "mAP50": results.results_dict['metrics/mAP50(B)'],
+        "mAP50-95": results.results_dict['metrics/mAP50-95(B)'],
+        "Precision": results.results_dict['metrics/precision(B)'],
+        "Recall": results.results_dict['metrics/recall(B)']
+    }
 
-'''
+
+def print_summary(all_results):
+    print("\n" + "="*85)
+    print(f"{'MODEL':<25} | {'DATASET':<15} | {'mAP50':<10} | {'mAP50-95':<10} | {'Prec':<10}")
+    print("-" * 85)
+    for res in all_results:
+        if res:
+            print(f"{res['Model']:<25} | {res['Dataset']:<15} | {res['mAP50']:<10.4f} | {res['mAP50-95']:<10.4f} | {res['Precision']:<10.4f}")
+    print("="*85 + "\n")
+
+
 if __name__ == "__main__":
-    # get project root
     ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     
-    # DEFINE PATHS, IF ADDING A NEW TRAINED MODEL DEFINE ITS PATH HERE UNDER 'MODEL_NAME' = .......:
-    BASELINE_MODEL = os.path.join(ROOT, 'models', 'best.pt')
-    FIFTY_FIFTY_TAPE_MODEL = os.path.join(ROOT, 'models', 'fifty_fifty_split_tape.pt')
+    # model paths -> NOTE: IF ADDING A NEW MODEL ADD IT HERE
+    models = {
+        "Baseline": os.path.join(ROOT, 'models', 'best.pt'),
+        "50/50 Tape": os.path.join(ROOT, 'models', 'fifty_fifty_split_tape.pt')
+    }
 
-    # Datasets
-    ATTACK_YAML = os.path.join(ROOT, 'datasets', 'archive', 'attack.yaml')
-    DATA_YAML = os.path.join(ROOT, 'datasets', 'archive', 'data.yaml')
+    # dataset paths, this doesn't really have to be changed unless we change the adversarial attack dataset creation logic to not overwrite
+    datasets = {
+        "Clean": os.path.join(ROOT, 'datasets', 'archive', 'data.yaml'),
+        "Attack": os.path.join(ROOT, 'datasets', 'archive', 'attack.yaml')
+    }
 
-    # Run it
-    validate_model(FIFTY_FIFTY_TAPE_MODEL, DATA_YAML)
+    results_summary = []
+
+    for m_name, m_path in models.items():
+        for d_name, d_path in datasets.items():
+            print(f"Evaluating {m_name} on {d_name} dataset...")
+            res = validate_model(m_name, m_path, d_name, d_path)
+            results_summary.append(res)
+
+    print_summary(results_summary)
