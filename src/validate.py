@@ -46,7 +46,8 @@ if __name__ == "__main__":
     models = {
     "Baseline": os.path.join(ROOT, 'models', 'best.pt'),
     "50/50 Tape": os.path.join(ROOT, 'models', 'fifty_fifty_split_tape.pt'),
-    "70/30 Tape": os.path.join(ROOT, 'models', '70_30_tape.pt')
+    "70/30 Tape": os.path.join(ROOT, 'models', '70_30_tape.pt'),
+    "70/30 Graffiti": os.path.join(ROOT, 'runs', 'detect', 'yolov8_aug_graffiti', 'weights', 'best.pt'),
     }
 
     # dataset paths, this doesn't really have to be changed unless we change the adversarial attack dataset creation logic to not overwrite

@@ -64,73 +64,48 @@ def apply_heavy_occlusion(image, bbox):
 
 
 def apply_graffiti(image, bbox, num_elements=6):
-    """
-    Simulates graffiti vandalism by drawing random coloured shapes and lines
-    over the sign bounding box. Includes filled shapes, strokes, and scribbles
-    to mimic real spray-paint vandalism patterns.
-
-    Args:
-        image:        BGR image (numpy array)
-        bbox:         YOLO-format (x_center, y_center, width, height) normalized
-        num_elements: number of graffiti strokes/shapes to draw (default: 6)
-    """
     h, w, _ = image.shape
     x_center, y_center, b_w, b_h = bbox
-
     x1 = int((x_center - b_w / 2) * w)
     y1 = int((y_center - b_h / 2) * h)
     x2 = int((x_center + b_w / 2) * w)
     y2 = int((y_center + b_h / 2) * h)
-
     sign_w = max(1, x2 - x1)
     sign_h = max(1, y2 - y1)
 
+    # Skip graffiti if the bounding box is too small to draw on meaningfully
+    if sign_w < 12 or sign_h < 12:
+        return image
+
     def rand_point():
-        """Random point within the sign bounding box."""
-        return (
-            int(np.random.uniform(x1, x2)),
-            int(np.random.uniform(y1, y2))
-        )
+        return (int(np.random.uniform(x1, x2)), int(np.random.uniform(y1, y2)))
 
     def rand_color():
-        """Vivid spray-paint colour (avoid near-grey/white/black)."""
         hue = np.random.randint(0, 180)
-        hsv_color = np.array([[[hue, 220, 200]]], dtype=np.uint8)
-        bgr = cv2.cvtColor(hsv_color, cv2.COLOR_HSV2BGR)[0][0]
+        bgr = cv2.cvtColor(np.array([[[hue, 220, 200]]], dtype=np.uint8), cv2.COLOR_HSV2BGR)[0][0]
         return (int(bgr[0]), int(bgr[1]), int(bgr[2]))
 
     overlay = image.copy()
-
     for _ in range(num_elements):
-        color = rand_color()
+        color      = rand_color()
         shape_type = np.random.choice(['line', 'filled_rect', 'circle', 'polyline'])
-        thickness = np.random.randint(2, max(3, sign_w // 6))
-
+        thickness  = np.random.randint(2, max(3, sign_w // 6))
         if shape_type == 'line':
-            pt1, pt2 = rand_point(), rand_point()
-            cv2.line(overlay, pt1, pt2, color, thickness)
-
+            cv2.line(overlay, rand_point(), rand_point(), color, thickness)
         elif shape_type == 'filled_rect':
-            pt1, pt2 = rand_point(), rand_point()
-            # Keep rectangles smallish so they don't cover the whole sign
-            rx1, ry1 = min(pt1[0], pt2[0]), min(pt1[1], pt2[1])
-            rx2 = rx1 + np.random.randint(sign_w // 6, sign_w // 2)
-            ry2 = ry1 + np.random.randint(sign_h // 6, sign_h // 2)
-            cv2.rectangle(overlay, (rx1, ry1), (min(rx2, x2), min(ry2, y2)), color, -1)
-
+            pt   = rand_point()
+            # Clamp range so low < high even on small signs
+            rw   = max(2, sign_w // 6)
+            rh   = max(2, sign_h // 6)
+            rx2  = pt[0] + np.random.randint(rw, max(rw + 1, sign_w // 2))
+            ry2  = pt[1] + np.random.randint(rh, max(rh + 1, sign_h // 2))
+            cv2.rectangle(overlay, pt, (min(rx2, x2), min(ry2, y2)), color, -1)
         elif shape_type == 'circle':
-            center = rand_point()
-            radius = np.random.randint(sign_w // 8, sign_w // 3)
-            filled = np.random.random() > 0.5
-            cv2.circle(overlay, center, radius, color, -1 if filled else thickness)
-
+            radius = np.random.randint(max(1, sign_w // 8), max(2, sign_w // 3))
+            cv2.circle(overlay, rand_point(), radius, color, -1 if np.random.random() > 0.5 else thickness)
         elif shape_type == 'polyline':
-            # A jagged scribble-like stroke
-            num_pts = np.random.randint(3, 7)
-            pts = np.array([rand_point() for _ in range(num_pts)], dtype=np.int32)
+            pts = np.array([rand_point() for _ in range(np.random.randint(3, 7))], dtype=np.int32)
             cv2.polylines(overlay, [pts], isClosed=False, color=color, thickness=thickness)
-
-    # Blend with original so the sign is still partially visible
     alpha = np.random.uniform(0.55, 0.80)
     cv2.addWeighted(overlay, alpha, image, 1 - alpha, 0, image)
     return image
