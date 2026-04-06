@@ -172,33 +172,24 @@ def apply_illumination(image, bbox):
     return image
 
 
-# ── Dataset generation helpers ───────────────────────────────────────────────
 
-# NOTE: IF YOU ADD A NEW ATTACK TYPE, ADD IT TO THIS MAP
+# NOTE: IF YOU ADD A NEW ATTACK TYPE, ADD IT TO THIS MAP (excludes occlusion which is for testing)
 ATTACK_MAP = {
     "tape":            apply_digital_tape,
     "patch":           apply_adversarial_patch,
-    "heavy_occlusion": apply_heavy_occlusion,
     "graffiti":        apply_graffiti,
     "illumination":    apply_illumination,
 }
 
 
-def generate_attack_dataset(base_path, attack_type="patch"):
+def generate_attack_dataset(base_path, attack_type="mix"):
     """
-    Applies the chosen attack to every image in valid/images and writes
-    the results to attacked_val/images (labels are copied unchanged).
-
-    attack_type options: 'tape', 'patch', 'heavy_occlusion', 'graffiti', 'illumination'
+    Applies attacks to images in valid/images. 
+    If attack_type is mix then it cycles through all available attacks 
+    to create balanced adversarial set.
     """
-    if attack_type not in ATTACK_MAP:
-        print(f"❌ Invalid attack type: '{attack_type}'. Valid options: {list(ATTACK_MAP.keys())}")
-        attack_func = apply_adversarial_patch
-    else:
-        attack_func = ATTACK_MAP[attack_type]
-
-    val_images_path  = os.path.join(base_path, 'valid', 'images')
-    val_labels_path  = os.path.join(base_path, 'valid', 'labels')
+    val_images_path = os.path.join(base_path, 'valid', 'images')
+    val_labels_path = os.path.join(base_path, 'valid', 'labels')
     output_base      = os.path.join(base_path, 'attacked_val')
     output_images    = os.path.join(output_base, 'images')
     output_labels    = os.path.join(output_base, 'labels')
@@ -209,27 +200,38 @@ def generate_attack_dataset(base_path, attack_type="patch"):
         if os.path.exists(output_labels):
             shutil.rmtree(output_labels)
         shutil.copytree(val_labels_path, output_labels)
-        print(f"✅ Labels synced for '{attack_type}' attack.")
 
-    print(f"Creating '{attack_type}' attacked images...")
-    for img_name in os.listdir(val_images_path):
-        if not img_name.endswith(('.jpg', '.jpeg', '.png')):
-            continue
+    # get list of attack functions
+    attack_names = list(ATTACK_MAP.keys())
+    
+    print(f"🚀 Generating {attack_type} dataset...")
 
+    image_files = [f for f in os.listdir(val_images_path) if f.endswith(('.jpg', '.jpeg', '.png'))]
+    
+    for i, img_name in enumerate(image_files):
         img = cv2.imread(os.path.join(val_images_path, img_name))
         label_file = os.path.join(val_labels_path, img_name.rsplit('.', 1)[0] + '.txt')
 
         if os.path.exists(label_file):
+            # checks which attack to use for SPECIFIC image
+            if attack_type == "mix":
+                # go through all attacks
+                current_attack_name = attack_names[i % len(attack_names)]
+                attack_func = ATTACK_MAP[current_attack_name]
+            else:
+                attack_func = ATTACK_MAP.get(attack_type, apply_adversarial_patch)
+            
             with open(label_file, 'r') as f:
                 for line in f:
                     parts = line.split()
                     if len(parts) >= 5:
                         bbox = [float(x) for x in parts[1:]]
+                        # apply attack
                         img = attack_func(img, bbox)
 
         cv2.imwrite(os.path.join(output_images, img_name), img)
 
-    print(f"✅ Done. Attacked images saved to {output_images}")
+    print(f"✅ Done. Mixed dataset saved to {output_images}")
 
 
 def create_attack_yaml(base_path, attack_type="patch"):

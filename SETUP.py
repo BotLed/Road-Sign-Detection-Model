@@ -38,7 +38,7 @@ def setup_workspace():
         '''
         CHANGE "patch" TO WHICHEVER ATTACK TYPE YOU WOULD LIKE TO VALIDATE ON (possible types found in src/attack.py)
         '''
-        generate_attack_dataset(extract_path, "patch")
+        generate_attack_dataset(extract_path, "mix")
         create_attack_yaml(extract_path)
 
     else:
