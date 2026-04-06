@@ -1,6 +1,6 @@
 import zipfile
 import os
-from  src.attack import generate_attack_dataset, create_attack_yaml
+from src.attack import generate_attack_dataset, create_attack_yaml
 
 '''
 BEFORE RUNNING THIS MAKE SURE TO 
@@ -14,10 +14,11 @@ IF DATA YAML ISSUE:
 TO VALIDATE: RUN VALIDATE.PY
 '''
 
+
 def setup_workspace():
     # gets directory where THIS script is saved
     base_dir = os.path.dirname(os.path.abspath(__file__))
-    
+
     # defines paths relative to base_dir
     zip_path = os.path.join(base_dir, 'archive.zip')
     extract_path = os.path.join(base_dir, 'datasets', 'archive')
@@ -25,13 +26,13 @@ def setup_workspace():
     # check if archive.zip exists, YOU NEED IT IN THE SAME LEVEL AS THIS SCRIPT (unzipped)
     if os.path.exists(zip_path):
         print(f"Extracting {zip_path} to {extract_path}...")
-        
+
         # destination folder exists?
         os.makedirs(extract_path, exist_ok=True)
-        
+
         with zipfile.ZipFile(zip_path, 'r') as zip_ref:
             zip_ref.extractall(extract_path)
-            
+
         print("✅ Extraction complete")
 
         '''
@@ -42,6 +43,7 @@ def setup_workspace():
 
     else:
         print(f"❌ Error: Could not find '{zip_path}' in the current directory.")
+
 
 if __name__ == '__main__':
     setup_workspace()
