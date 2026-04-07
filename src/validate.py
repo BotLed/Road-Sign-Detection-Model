@@ -52,6 +52,7 @@ if __name__ == "__main__":
     "50/50 Illumination": os.path.join(ROOT, 'models', '50_50_illumination.pt'),
     "70/30 Illumination": os.path.join(ROOT, 'models', '70_30_illumination.pt'),
     "70/30 Graffiti": os.path.join(ROOT, 'models', '70_30_graffiti.pt'),
+    "50/50 Mixed":    os.path.join(ROOT, 'models', '50_50_mixed.pt'),
     }
 
     # dataset paths, this doesn't really have to be changed unless we change the adversarial attack dataset creation logic to not overwrite
